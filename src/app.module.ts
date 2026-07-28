@@ -1,29 +1,43 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './controller/app.controller';
-import { MathController } from './controller/app.mathcontroller';
-import { AppService } from './services/app.service';
-import { MathService } from './services/app.mathservice';
-import { NotesController } from './controller/app.notescontroller';
-import { WeatherService } from './services/app.weatherservice';
-import { WeatherController } from './controller/app.weathercontroller';
 
-import { Note, NotesService } from './services/app.notesservice';
-import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { NotesModule } from './notes/notes.module';
+import { WeatherModule } from './weather/weather.module';
+import { HealthController } from './health/health.controller';
+import { LoggerMiddleware } from './common/middleware/logger.middleware';
+import { User } from './users/entities/user.entity';
+import { Note } from './notes/entities/note.entity';
+import { validateEnv } from './config/env.validation';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'better-sqlite3',
-      database: 'notes.db',
-      entities: [Note],
-      synchronize: true,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validate: validateEnv,
     }),
-    TypeOrmModule.forFeature([Note]),
-    ConfigModule.forRoot()
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        type: 'better-sqlite3' as const,
+        database: config.get<string>('DATABASE_PATH') ?? 'notes.db',
+        entities: [User, Note],
+        //Nur ausserhalb von Produktion: in Prod uebernehmen Migrationen das Schema
+        synchronize: config.get<string>('NODE_ENV') !== 'production',
+      }),
+    }),
+    AuthModule,
+    UsersModule,
+    NotesModule,
+    WeatherModule,
   ],
-  
-  controllers: [AppController, MathController, NotesController, WeatherController],
-  providers: [AppService, MathService, NotesService, WeatherService],
+  controllers: [HealthController],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    //'{*path}' statt '*': path-to-regexp v8 verlangt benannte Wildcards
+    consumer.apply(LoggerMiddleware).forRoutes('{*path}');
+  }
+}
