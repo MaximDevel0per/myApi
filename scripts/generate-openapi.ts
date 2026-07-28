@@ -16,7 +16,12 @@ process.env.GEOCODING_API_KEY ??= 'placeholder';
 const outDir = join(__dirname, '..', 'public');
 
 async function main() {
-  const app = await NestFactory.create(AppModule, { logger: false });
+  //abortOnError: false - sonst faengt Nest Init-Fehler selbst ab, beendet mit
+  //Code 1 und die Meldung verschwindet zusammen mit dem deaktivierten Logger
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error'],
+    abortOnError: false,
+  });
   applyRoutingConventions(app);
 
   const document = createOpenApiDocument(app);

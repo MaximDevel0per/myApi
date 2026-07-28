@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
+      contents: read #sobald ein permissions-Block existiert, sind alle uebrigen Rechte "none"
       pages: write
       id-token: write
 
