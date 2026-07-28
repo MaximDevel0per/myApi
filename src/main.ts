@@ -1,15 +1,15 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { applyRoutingConventions, createOpenApiDocument } from './openapi';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors();
-  app.setGlobalPrefix('api', { exclude: ['health'] });
-  app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
+  applyRoutingConventions(app);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -21,20 +21,7 @@ async function bootstrap() {
   );
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  const config = new DocumentBuilder()
-    .setTitle('NestNotes API')
-    .setDescription(
-      'Notizverwaltung mit JWT-Authentifizierung. Jede Notiz gehoert genau einem User.',
-    )
-    .setVersion('1.0')
-    .addBearerAuth()
-    .addTag('auth', 'Registrierung und Login')
-    .addTag('notes', 'CRUD auf eigenen Notizen')
-    .addTag('weather', 'Wetter zu einer Postleitzahl')
-    .addTag('health', 'Liveness-Check')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
+  const document = createOpenApiDocument(app);
   SwaggerModule.setup('api/docs', app, document, {
     //Token bleibt beim Neuladen der Swagger-UI erhalten
     swaggerOptions: { persistAuthorization: true },
