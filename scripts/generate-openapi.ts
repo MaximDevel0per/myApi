@@ -31,8 +31,9 @@ async function main() {
   console.log(`openapi.json geschrieben nach ${outDir}`);
 }
 
-main().catch((err) => {
-  console.error('Erzeugen des OpenAPI-Dokuments fehlgeschlagen:');
-  console.error(err);
+main().catch((err: unknown) => {
+  //Bewusst console.log: stdout ist in den CI-Logs zuverlaessig sichtbar
+  console.log('Erzeugen des OpenAPI-Dokuments fehlgeschlagen:');
+  console.log(err instanceof Error ? (err.stack ?? err.message) : err);
   process.exit(1);
 });

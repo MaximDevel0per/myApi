@@ -34,7 +34,11 @@ jobs:
         run: npm ci
 
       - name: OpenAPI-Dokument erzeugen
-        run: npm run openapi
+        run: |
+          node -v
+          npm -v
+          node -e "require('better-sqlite3'); console.log('better-sqlite3 laedt')"
+          npm run openapi 2>&1
 
       - uses: actions/configure-pages@v5
 
